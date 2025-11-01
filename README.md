@@ -22,13 +22,13 @@
 
 
 Login Window:  
-![Chat UI](/frontend/src/images/img2.png)
+![Chat UI](/client/src/images/img2.png)
 
 Join / Create Room:  
-![Chat UI](/frontend/src/images/img3.png)
+![Chat UI](/client/src/images/img3.png)
 
 Chat Room:  
-![Chat UI](/frontend/src/images/img4.png)
+![Chat UI](/client/src/images/img4.png)
 
 
 
@@ -70,12 +70,10 @@ cd DevChat
 ``` bash
 cd backend
 npm run dev
-# Runs on http://localhost:5000
 ```
 
 ### Start Frontend
 ``` bash
 cd frontend
 npm run dev
-# Runs on http://localhost:3000
 ```
