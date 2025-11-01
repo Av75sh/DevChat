@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {
-  register, login, logout, me
-} = require('../controllers/chatController');
+const { register, login, me, logout } = require('../controllers/chatController');
 
 router.post('/register', register);
 router.post('/login', login);

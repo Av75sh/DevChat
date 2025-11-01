@@ -78,17 +78,39 @@ const getMessages = (req, res) => {
 };
 
 const postMessage = (req, res, io) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Not authenticated' 
+    });
+  }
+
   const { content } = req.body;
+  
+  if (!content || !content.trim()) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Message content is required' 
+    });
+  }
+
+  const user = users.get(req.session.userId);
+  if (!user) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'User not found' 
+    });
+  }
+
   const message = new Message(content.trim(), req.session.userId);
   globalMessages.push(message);
 
-  const sender = users.get(message.sender);
   const msgData = {
     _id: message.id,
     content: message.content,
     messageType: message.messageType,
     reactions: [],
-    sender: { username: sender?.username || 'Unknown' },
+    sender: { username: user.username },
     createdAt: message.createdAt
   };
 

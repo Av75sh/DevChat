@@ -4,40 +4,76 @@ const socketIo = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const session = require('express-session');
-const authRoutes = require('./routes/authRoutes');
-const chatRoutes = require('./routes/chatRoutes');
-const setupSocket = require('./sockets');
 const { createDemoData } = require('./controllers/chatController');
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = process.env.CLIENT_ORIGIN 
+  ? process.env.CLIENT_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:5173'];
+
+console.log('🌐 Allowed origins:', allowedOrigins);
+
 const io = socketIo(server, {
-  cors: { origin: 'http://localhost:3000', methods: ['GET', 'POST'], credentials: true }
+  cors: { 
+    origin: allowedOrigins, 
+    methods: ['GET', 'POST'], 
+    credentials: true 
+  }
 });
 
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+
+
+
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.JWT_SECRET || 'your-secret-key',
   resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 7 }
+  saveUninitialized: true,
+  cookie: { 
+    secure: false,
+    sameSite: 'lax',
+    httpOnly: true, 
+    maxAge: 1000 * 60 * 60 * 24 * 7
+  }
 }));
 
-app.use('/api/auth', authRoutes);
-app.use('/api', chatRoutes(io));
-
 app.get('/', (req, res) => {
-  res.json({ message: 'DevChat Server running ✅' });
+  res.json({ 
+    message: 'DevChat Server running ✅',
+    allowedOrigins: allowedOrigins
+  });
+});
+const authRoutes = require('./routes/authRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const setupSocket = require('./sockets');
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - User: ${req.session.userId || 'none'}`);
+  next();
 });
 
+console.log('Mounting /api/auth routes...');
+app.use('/api/auth', authRoutes);
+
+console.log('Mounting /api routes...');
+const chatRouter = chatRoutes(io);
+app.use('/api', chatRouter);
+
+console.log('Routes mounted successfully!');
 setupSocket(io);
 createDemoData();
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running `);
 });
