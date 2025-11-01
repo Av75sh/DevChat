@@ -16,8 +16,7 @@
 
 ## 🖼️ Reference Screenshots
 <p align="center">
-  <b>Login Window</b><br>
-  <img src="/frontend/src/images/img1.png" alt="Chat UI" width="600"/>
+  <img src="/client/src/images/img1.png" alt="Chat UI" width="600"/>
 </p>
 
 
