@@ -2,7 +2,7 @@ const User = require('../models/User');
 const Message = require('../models/Message');
 
 const users = new Map();
-const globalMessages = [];
+const roomMessages = new Map(); 
 const connectedUsers = new Map();
 
 const register = (req, res) => {
@@ -63,17 +63,24 @@ const logout = (req, res) => {
 };
 
 const getMessages = (req, res) => {
-  const recent = globalMessages.slice(-50).map(msg => {
+  const room = req.query.room || req.params.room || 'default';
+  const messages = roomMessages.get(room) || [];
+  
+  const recent = messages.slice(-50).map(msg => {
     const sender = users.get(msg.sender);
     return {
       _id: msg.id,
       content: msg.content,
       messageType: msg.messageType,
       reactions: msg.reactions,
-      sender: { username: sender?.username || 'Unknown' },
+      sender: { 
+        _id: sender?.id || 'unknown',
+        username: sender?.username || 'Unknown' 
+      },
       createdAt: msg.createdAt
     };
   });
+  
   res.json({ success: true, data: { messages: recent } });
 };
 
@@ -85,12 +92,19 @@ const postMessage = (req, res, io) => {
     });
   }
 
-  const { content } = req.body;
+  const { content, room } = req.body;
   
   if (!content || !content.trim()) {
     return res.status(400).json({ 
       success: false, 
       message: 'Message content is required' 
+    });
+  }
+
+  if (!room) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Room is required' 
     });
   }
 
@@ -103,18 +117,25 @@ const postMessage = (req, res, io) => {
   }
 
   const message = new Message(content.trim(), req.session.userId);
-  globalMessages.push(message);
+  
+  if (!roomMessages.has(room)) {
+    roomMessages.set(room, []);
+  }
+  roomMessages.get(room).push(message);
 
   const msgData = {
     _id: message.id,
     content: message.content,
     messageType: message.messageType,
     reactions: [],
-    sender: { username: user.username },
+    sender: { 
+      _id: user.id,
+      username: user.username 
+    },
     createdAt: message.createdAt
   };
 
-  io.emit('new-message', msgData);
+  io.to(room).emit('new-message', msgData);
 
   res.json({ success: true, data: { message: msgData } });
 };
@@ -134,7 +155,7 @@ const createDemoData = () => {
   users.set(demo2.id, demo2);
 
   const welcome = new Message('Welcome to DevChat! 🚀', demo1.id);
-  globalMessages.push(welcome);
+  roomMessages.set('default', [welcome]);
 };
 
 module.exports = {

@@ -52,7 +52,7 @@ const ChatRoom = ({ user, roomCode, setRoomCode, currentRoom, setCurrentRoom }) 
       setupCall,
       peerConnection: peerConnection.current
     });
-    const res = await apiCall('/messages/' + roomCode.trim());
+    const res = await apiCall('/messages?room=' + roomCode.trim());
     setMessages(res.data.messages);
   };
 
